@@ -1,0 +1,39 @@
+version: '3.8'
+services:
+  mysql:
+    image: mysql:latest
+    env_file:
+      - .env
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      retries: 5
+    networks:
+      - mysql_network
+
+  ngrok:
+    depends_on:
+      mysql:
+        condition: service_healthy
+    image: ngrok/ngrok:latest
+    env_file:
+      - .env
+    command: "tcp mysql:3306" # Connect to MySQL
+    ports:
+      - "4040:4040" # Dashboard 
+    volumes:
+      - ./ngrok.yml:/home/ngrok/.config/ngrok/ngrok.yml # authentication
+    networks:
+      - mysql_network
+
+networks:
+  mysql_network:
